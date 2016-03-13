@@ -45,7 +45,9 @@
   <ItemGroup>
     <Compile Include="GeneratorBase.cs" />
     <Compile Include="GeneratorExample.cs" />
+    <Compile Include="JoeToddChadGenerator .cs" />
     <Compile Include="MMTimer.cs" />
+    <Compile Include="OriginalGeneratorExample.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

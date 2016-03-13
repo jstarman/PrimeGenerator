@@ -5,25 +5,6 @@ using System.Threading.Tasks;
 
 namespace PrimeCompetition
 {
-    /// <summary>
-    /// Example implementation.
-    /// 
-    /// Requirements:
-    ///
-    /// 1) Extend GeneratorBase.
-    ///	2) Implement the Description property.
-    ///	3) Implement the DoWork method.
-    ///		3a) DoWork should generates primes as fast as possible.
-    ///		3b) When the GeneratorBase.Stop flag is set, DoWork should immediately stop all prime generation activities.
-    ///		3c) Within 100ms of the GeneratorBase.Stop flag being set, DoWork should return an IEnumerable<uint> containing
-    ///			all found primes.  The returned set should begin with 2, and include all primes between 2 and the highest
-    ///			found prime, in sequential order. For example:
-    ///				Valid - [2, 3, 5] - includes all primes between 2 and 5, in ascending order
-    ///				Valid - [2, 3, 5, 7, 11] - includes all primes between 2 and 11, in ascending order
-    ///				Invalid - [2, 3, 5, 7, 9, 11] - includes a non-primes
-    ///				Invalid - [2, 5, 3, 11, 7] - incorect order
-    ///				Invalid - [2, 3, 5, 11] - missing a prime
-    /// </summary>
     public class GeneratorExample : GeneratorBase
     {
         public override string Description
@@ -32,7 +13,7 @@ namespace PrimeCompetition
         }
 
         private const int segmentCount = 10000;
-        private const uint segmentSize = 15000;
+        private const int segmentSize = 15000;
         private const int threadCount = 8;
         private IEnumerable<Segment> _segments;
 
@@ -46,21 +27,20 @@ namespace PrimeCompetition
             primes.Add(2);
 
             var currentIndex = 0;
-
+            List<Task<CompletedSegment>> tasks = new List<Task<CompletedSegment>>(segmentCount);
             while (!Stop)
             {
-                var tasks = _segments.Skip(currentIndex).Take(threadCount).Select(s => FindAsync(s));
-                var waiter = Task.WhenAll(tasks);
+                var t = _segments.Skip(currentIndex).Take(threadCount).Select(s => FindAsync(s));
+                var waiter = Task.WhenAll(t);
                 waiter.Wait();
-
-                primes.AddRange(tasks
-                .OrderBy(t => t.Result.Id)
-                .TakeWhile(t => t.Result.IsCompleted)
-                .SelectMany(t => t.Result.Primes));
-
+                tasks.AddRange(t);
                 currentIndex = currentIndex + threadCount;
             }
 
+            primes.AddRange(tasks
+                .OrderBy(t => t.Result.Id)
+                .TakeWhile(t => t.Result.IsCompleted)
+                .SelectMany(t => t.Result.Primes));
             return primes.ToList();
         }
 
@@ -72,7 +52,7 @@ namespace PrimeCompetition
 
         private CompletedSegment FindPrimesInSegment(Segment s)
         {
-            List<uint> primes = new List<uint>();
+            List<uint> primes = new List<uint>(segmentSize);
 
             // Start by checking 3
             uint i = s.Min;
